@@ -78,7 +78,6 @@ class Helper(object):
             returnStr += ")"
         if( 'message' in logItem.data ):
             messages = logItem.message.split('\n')
-            #returnStr += "|| "
             returnStr += ": "
             for message in messages:
 	        if( len(message) > 0 ):
@@ -87,9 +86,9 @@ class Helper(object):
         return returnStr
         
 class Notifier(object):
-    def __init__(self, irc, channel, name, url):
+    def __init__(self, irc, channels, name, url):
         self.irc = irc #needed to write output to IRC
-        self.channel = channel
+        self.channels = channels#.split(",")
         self.name = name
         self.url = url
         
@@ -107,23 +106,24 @@ class Notifier(object):
             log = Helper.getLogItemsByRange(self.url, self.lastRev, headRev)
             for item in log:
                 itemStr = Helper.logItemToString(item, self.name)
-                self.irc.queueMsg( ircmsgs.privmsg(self.channel, itemStr) )
+                for channel in self.channels:
+                    self.irc.queueMsg( ircmsgs.privmsg(channel, itemStr) )
 
 #This class is needed to create picklable objects of Notifier
 #The IRC-instance in Notifier is not picklable (makes sense)
 class NotifierConfig(object):
     def __init__(self, notifier):
         if(notifier == None):
-            self.channel = ""
+            self.channels = []
             self.name = ""
             self.url = ""
         else:
-            self.channel = notifier.channel
+            self.channels = notifier.channels
             self.name = notifier.name
             self.url = notifier.url
         
     def getNotifier(self, irc):
-        return Notifier(irc, self.channel, self.name, self.url)            
+        return Notifier(irc, self.channels, self.name, self.url)            
         
         
 class Subversion(callbacks.Plugin):
@@ -210,10 +210,10 @@ class Subversion(callbacks.Plugin):
             irc.reply( itemStr )
     svnlog = wrap(svnlog, ['text', additional(('int', 'range'), 5)])
     
-    def add(self, irc, msg, args, channel, name, url):
-        """<channel> <name> <url>
+    def add(self, irc, msg, args, name, url, channels):
+        """<name> <url> <channel1> [<channel2> ...]
         
-        Adds a notifier with <name> of <url> to the given <channel>
+        Adds a notifier with <name> of <url> to the given channels
         """
         
         #check if there is a notifier (do not add a second one, the scheduler does not allow that)
@@ -222,12 +222,12 @@ class Subversion(callbacks.Plugin):
             return
         
         #needs to be printed before registering the event, because it will be executed immediately
-        irc.reply( "Adding Subversion Notifier '" + name + "' to channel " + channel + " with " + url )
+        irc.reply( "Adding Subversion Notifier '" + name + "' to channels " + ", ".join(channels) + " with " + url )
         
-        notifier = Notifier(irc, channel, name, url)
+        notifier = Notifier(irc, channels, name, url)
         self._addNotifier(irc, notifier)
         self.notifiers[name] = notifier
-    add = wrap(add, [('checkChannelCapability', 'op'), 'somethingWithoutSpaces', 'somethingWithoutSpaces'])
+    add = wrap(add, ['somethingWithoutSpaces', 'somethingWithoutSpaces', many('validChannel')])
     
     
     def remove(self, irc, msg, args, name):
@@ -256,7 +256,7 @@ class Subversion(callbacks.Plugin):
         
         for key, notifier in self.notifiers.items():
             output = ""
-            output += notifier.channel + " - "
+            output += ", ".join(notifier.channels) + " - "
             output += notifier.name + " - "
             output += notifier.url
             irc.reply( output )
