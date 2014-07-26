@@ -78,10 +78,12 @@ class Helper(object):
             returnStr += ")"
         if( 'message' in logItem.data ):
             messages = logItem.message.split('\n')
+            messages = filter(None, messages)
             returnStr += ": "
-            for message in messages:
-	        if( len(message) > 0 ):
-                    returnStr += message + " || "
+            for message in messages[:-1]:
+                returnStr += message + " || "
+            else:
+                returnStr += messages[-1]
             
         return returnStr
         
