@@ -44,7 +44,7 @@ class Helper(object):
         client = pysvn.Client()
         startRev = pysvn.Revision( pysvn.opt_revision_kind.number, startRevNum )
         endRev = pysvn.Revision( pysvn.opt_revision_kind.number, endRevNum )
-        log = client.log(url, endRev, startRev)
+        log = client.log(url, endRev, startRev, True)
         return log
         
     @staticmethod
@@ -63,14 +63,23 @@ class Helper(object):
         #--> "\x1F" for underlined
         returnStr = ""
         if( 'revision' in logItem.data ):
-            returnStr += "\x02" + reponame + " " + str(logItem.revision.number) + "\x02" + " - "
-        if( 'date' in logItem.data ):
-            returnStr += time.strftime("%b-%d %H:%M", time.gmtime((logItem.date))) + " - "
+            returnStr += "\x02[" + reponame + "]\x02 \x0304r" + str(logItem.revision.number) + "\x03 "
+        #if( 'date' in logItem.data ):
+        #    returnStr += time.strftime("%b-%d %H:%M", time.gmtime((logItem.date))) + " - "
         if( 'author' in logItem.data ):
-            returnStr += "\x02" + logItem.author + "\x02" + " - "
+            returnStr += "\x0303" + logItem.author + "\x03"
+        if( 'changed_paths' in logItem.data and len(logItem.changed_paths) > 0 ):
+            returnStr += " (" + str(len(logItem.changed_paths)) + " files changed"
+            if( len(logItem.changed_paths) <= 6 ):
+                returnStr += ":\x0310"
+                for path in logItem.changed_paths:
+                    returnStr += " " + path.path
+                returnStr += "\x03"
+            returnStr += ")"
         if( 'message' in logItem.data ):
             messages = logItem.message.split('\n')
-            returnStr += "|| "
+            #returnStr += "|| "
+            returnStr += ": "
             for message in messages:
                 returnStr += message + " || "
             
