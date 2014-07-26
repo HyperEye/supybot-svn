@@ -81,7 +81,8 @@ class Helper(object):
             #returnStr += "|| "
             returnStr += ": "
             for message in messages:
-                returnStr += message + " || "
+	        if( len(message) > 0 ):
+                    returnStr += message + " || "
             
         return returnStr
         
