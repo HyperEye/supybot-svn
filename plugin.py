@@ -87,6 +87,11 @@ class Helper(object):
             
         return returnStr
         
+    @staticmethod
+    def splitLine(line, lineMax):
+        for start in range(0, len(line), lineMax):
+            yield line[start:start+lineMax]
+
 class Notifier(object):
     def __init__(self, irc, channels, name, url):
         self.irc = irc #needed to write output to IRC
@@ -109,7 +114,8 @@ class Notifier(object):
             for item in log:
                 itemStr = Helper.logItemToString(item, self.name)
                 for channel in self.channels:
-                    self.irc.queueMsg( ircmsgs.privmsg(channel, itemStr) )
+                    for line in Helper.splitLine(itemStr, 400):
+                        self.irc.queueMsg( ircmsgs.privmsg(channel, line) )
 
 #This class is needed to create picklable objects of Notifier
 #The IRC-instance in Notifier is not picklable (makes sense)
