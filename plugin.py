@@ -154,7 +154,8 @@ class Subversion(callbacks.Plugin):
         
         #this adds the notifiers
         for name, notifier in self.notifiers.items():
-            irc.reply( "Adding notifier '" + notifier.name + "' from config" )
+            if( hasattr(irc, 'reply') ):
+                irc.reply( "Adding notifier '" + notifier.name + "' from config" )
             self._addNotifier(irc, notifier)
 
     def die(self):
